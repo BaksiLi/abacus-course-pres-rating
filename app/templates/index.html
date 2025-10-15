@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>课程互评系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        body { 
+            background-color: #f4f5f9;
+            background-image: linear-gradient(135deg, #f4f5f9 0%, #e0e3ec 100%);
+        }
+        .tsinghua-purple { color: #660874; }
+        .tsinghua-purple-bg { background-color: #660874; }
+        footer.page-footer { color: #6b7280; font-size: 0.875rem; text-align: center; margin-top: 1.5rem; }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="max-w-2xl mx-auto mt-16 p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">{{ course_name }}</h1>
+            <p class="text-xl text-gray-600">课程互评系统</p>
+        </div>
+
+        <!-- Session & Time Info -->
+        <div class="bg-white rounded-xl p-6 card mb-6">
+            <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center space-x-4">
+                    <div>
+                        <span class="text-gray-500">当前场次：</span>
+                        <span class="font-semibold tsinghua-purple">{{ session_name or '默认场次' }}</span>
+                    </div>
+                </div>
+                <div class="text-gray-600" id="current-time"></div>
+            </div>
+        </div>
+
+        <!-- Presentation Order (if exists) -->
+        {% if presentation_order %}
+        <div class="bg-white rounded-xl p-6 card mb-6">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                <svg class="w-4 h-4 mr-2 tsinghua-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+                发表顺序
+            </h3>
+            <div class="flex flex-wrap items-center gap-2">
+                {% for idx, name in presentation_order %}
+                    <span class="px-3 py-1 rounded-full bg-purple-50 text-gray-800 border border-purple-200 text-sm">{{ name }}</span>
+                    {% if not loop.last %}<span class="text-gray-400">→</span>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Main Form -->
+        <div class="bg-white rounded-xl p-8 card">
+            <form action="/start" method="get" class="space-y-6">
+                <div class="space-y-2">
+                    <label class="block text-gray-700 font-medium">选择你的小组</label>
+                    <select required name="rater" class="w-full border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
+                        {% for g in rater_groups %}
+                            {% set label = g.endswith('组') and g or (g + '组') %}
+                            <option value="{{ g }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                
+                
+                <button type="submit" class="w-full tsinghua-purple-bg hover:opacity-90 text-white rounded-lg px-6 py-3 font-medium transition-all transform hover:scale-[1.02] shadow-lg">
+                    开始评分
+                </button>
+                <p class="text-xs text-gray-500 mt-2">每个小组只能提交一次评分</p>
+            </form>
+        </div>
+        <footer class="page-footer text-center mt-8 pt-4 border-t border-gray-200">
+            <p class="text-gray-600">© 2025 {% if course_institution %}{{ course_institution }}{% endif %}{{ course_name }}课程组</p>
+            <p class="text-xs text-gray-400 mt-1">
+                Built with 
+                <a href="https://github.com/baksili" target="_blank" rel="noopener" class="hover:text-gray-600 transition-colors" title="Built by an open-source developer">💜</a> 
+                and 
+                <button id="admin-toggle" class="text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center" title="管理员入口">⚙️</button>
+            </p>
+            <form id="admin-form" action="/admin" method="get" class="hidden mt-2 flex items-center gap-2 justify-center">
+                <input type="password" name="key" placeholder="密钥" class="border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500" required />
+                <button type="submit" class="px-3 py-1.5 tsinghua-purple-bg text-white rounded-lg text-xs hover:opacity-90">进入</button>
+            </form>
+        </footer>
+    </div>
+
+    <script>
+        // Admin toggle in footer
+        document.getElementById('admin-toggle').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('admin-form').classList.toggle('hidden');
+        });
+
+        // no special admin section on homepage; admin入口在页脚
+
+        // Current time display
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            document.getElementById('current-time').textContent = timeStr;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+        // 表单提交无需额外校验
+    </script>
+</body>
+</html>
+
+

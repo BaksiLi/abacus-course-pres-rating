@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+itsdangerous
+Jinja2
+python-multipart

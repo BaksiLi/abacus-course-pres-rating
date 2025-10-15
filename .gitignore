@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# OS / tooling
+.DS_Store
+.env
+
+# App artifacts
+app/ratings.db
+app/ratings.db-shm
+app/ratings.db-wal
+app/logs/
+
+# Local-only config
+config.py
+docker-compose.yml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+app/abacus.db*
+
+# Logs
+*.log
+app/logs/
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Config (keep example)
+# config.py  # 取消注释此行以忽略配置文件
+
+# Backup
+*.bak
+backup/
+
+# Temporary files
+*.tmp
+.cache/

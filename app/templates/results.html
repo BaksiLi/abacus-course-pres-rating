@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>评分结果 - 管理员</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+    body {
+        background-color: #f4f5f9;
+        background-image: linear-gradient(135deg, #f4f5f9 0%, #e0e3ec 100%);
+        min-height: 100vh;
+    }
+    .tab { padding: 0.75rem 1.5rem; font-weight: 500; border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem; transition: all .2s ease; cursor: pointer; border-bottom: 2px solid #d1d5db; background: #f3f4f6; color: #4b5563; }
+    .tab-active { background: #ffffff; color: #660874; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06); border-bottom-color: #ffffff; }
+    .tab-inactive { background: #f3f4f6; color: #4b5563; border-bottom-color: #d1d5db; }
+    .tab-inactive:hover { background: #e5e7eb; }
+    .tsinghua-purple { color: #660874; }
+    .tsinghua-purple-bg { background-color: #660874; }
+  </style>
+</head>
+<body class="text-gray-800">
+  <div class="max-w-5xl mx-auto mt-8 p-6">
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">{{ course_name }}</h1>
+        <p class="text-xl text-gray-600">评分结果</p>
+    </div>
+
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-xl font-semibold tsinghua-purple">管理员视图</h2>
+      </div>
+      <div class="space-x-2">
+        <a class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md bg-white hover:bg-gray-50" href="/">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          首页
+        </a>
+        <a class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md bg-white hover:bg-gray-50" href="/export.csv">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          导出CSV
+        </a>
+        <a class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md bg-white hover:bg-gray-50" href="/presentation-order">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+          </svg>
+          发表顺序
+        </a>
+      </div>
+    </div>
+
+    <div class="flex mb-4">
+      <button id="tab-table" class="tab tab-active">表格视图</button>
+      <button id="tab-chart" class="tab tab-inactive">图表视图</button>
+    </div>
+
+    <div id="view-table" class="bg-white p-6 rounded-lg card">
+      <div class="overflow-auto">
+        <table class="w-full border-collapse text-sm">
+          <thead>
+            <tr class="bg-gray-100 text-gray-700">
+              <th class="border border-gray-300 p-3 text-left">小组</th>
+              <th class="border border-gray-300 p-3">平均分</th>
+              <th class="border border-gray-300 p-3">评分人数</th>
+              <th class="border border-gray-300 p-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+            <tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-50">
+              <td class="border border-gray-300 p-3 font-medium">{{ r.target }}组</td>
+              <td class="border border-gray-300 p-3 text-center font-medium {% if r.average >= 8.5 %}text-green-600{% elif r.average < 7 %}text-red-600{% endif %}">
+                {{ '%.1f'|format(r.average) }}
+              </td>
+              <td class="border border-gray-300 p-3 text-center">{{ r.count }}</td>
+              <td class="border border-gray-300 p-3 text-center">
+                <button class="text-blue-600 hover:text-blue-800" onclick="showDetails('{{ r.target }}')">详情</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div id="view-chart" class="hidden bg-white p-6 rounded-lg card">
+      <canvas id="scoresChart" height="300"></canvas>
+    </div>
+  </div>
+  <footer class="text-center text-sm text-gray-600 mt-8 pt-4 border-t border-gray-200">
+      <p>© 2025 {% if course_institution %}{{ course_institution }}{% endif %}{{ course_name }}课程组</p>
+      <p class="text-xs text-gray-400 mt-1">
+          Built with 
+          <a href="https://github.com/baksili" target="_blank" rel="noopener" class="hover:text-gray-600 transition-colors" title="Built by an open-source developer">💜</a> 
+          and 
+          <a href="/admin?key=" class="text-gray-400 hover:text-gray-600 transition-colors" title="管理员">⚙️</a>
+      </p>
+  </footer>
+  
+  <script>
+    // 切换标签页
+    document.getElementById('tab-table').addEventListener('click', () => {
+      document.getElementById('tab-table').classList.add('tab-active');
+      document.getElementById('tab-table').classList.remove('tab-inactive');
+      document.getElementById('tab-chart').classList.add('tab-inactive');
+      document.getElementById('tab-chart').classList.remove('tab-active');
+      document.getElementById('view-table').classList.remove('hidden');
+      document.getElementById('view-chart').classList.add('hidden');
+    });
+    
+    document.getElementById('tab-chart').addEventListener('click', () => {
+      document.getElementById('tab-chart').classList.add('tab-active');
+      document.getElementById('tab-chart').classList.remove('tab-inactive');
+      document.getElementById('tab-table').classList.add('tab-inactive');
+      document.getElementById('tab-table').classList.remove('tab-active');
+      document.getElementById('view-chart').classList.remove('hidden');
+      document.getElementById('view-table').classList.add('hidden');
+      renderChart();
+    });
+    
+    // 渲染图表
+    function renderChart() {
+      const ctx = document.getElementById('scoresChart').getContext('2d');
+      
+      const data = {
+        labels: [{% for r in rows %}'{{ r.target }}组',{% endfor %}],
+        datasets: [{
+          label: '平均分',
+          data: [{% for r in rows %}{{ r.average }},{% endfor %}],
+          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+          borderColor: 'rgb(59, 130, 246)',
+          borderWidth: 1
+        }]
+      };
+      
+      new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: {
+          scales: {
+            y: {
+              beginAtZero: false,
+              min: 50,
+              max: 100
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: '各小组平均得分'
+            }
+          }
+        }
+      });
+    }
+    
+    // 显示详情
+    function showDetails(group) {
+      alert(`${group}组详细评分将在未来版本提供`);
+    }
+  </script>
+</body>
+</html>
+
+

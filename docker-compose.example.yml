@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    container_name: abacus_ratings
+    ports:
+      - "8000:8000"
+    environment:
+      # 从当前 shell 注入变量（示例：ADMIN_KEY=... SESSION_SECRET=... docker compose up）
+      - ADMIN_KEY=${ADMIN_KEY}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - COURSE_NAME=${COURSE_NAME:-Course Presentation Ratings}
+      - COURSE_INSTITUTION=${COURSE_INSTITUTION:-Your Institution}
+      - LOCK_EXPIRY_MINUTES=${LOCK_EXPIRY_MINUTES:-120}
+    volumes:
+      - ./app:/app/app:rw
+      # 如需本地覆盖配置，可临时挂载 config.py：
+      # - ./config.py:/app/config.py:ro
+    restart: unless-stopped

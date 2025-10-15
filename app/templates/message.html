@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>消息 - 《从算盘到量子计算机》</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        body {
+            background-color: #f4f5f9;
+            background-image: linear-gradient(135deg, #f4f5f9 0%, #e0e3ec 100%);
+        }
+        .tsinghua-purple { color: #660874; }
+        .tsinghua-purple-bg { background-color: #660874; }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="max-w-2xl mx-auto mt-16 p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">{{ course_name }}</h1>
+            <p class="text-xl text-gray-600">课程互评系统</p>
+        </div>
+
+        <!-- Message Card -->
+        <div class="bg-white rounded-xl p-8 card text-center">
+            {% if success %}
+            <div class="mb-6">
+                <svg class="mx-auto h-16 w-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h2 class="mt-4 text-2xl font-bold text-gray-800">评分提交成功！</h2>
+                <p class="mt-2 text-gray-600">{{ message }}</p>
+            </div>
+            {% else %}
+            <div class="mb-6">
+                <svg class="mx-auto h-16 w-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h2 class="mt-4 text-2xl font-bold text-gray-800">提交失败</h2>
+                <p class="mt-2 text-gray-600">{{ message }}</p>
+                <p class="mt-1 text-gray-500 text-sm">如需帮助，可联系课程组解锁编辑。</p>
+            </div>
+            {% endif %}
+
+            <div class="flex gap-4 justify-center">
+                <a href="/" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium">
+                    返回首页
+                </a>
+                {% if is_admin %}
+                <a href="/admin?key={{ admin_key }}" class="px-6 py-3 tsinghua-purple-bg text-white rounded-lg hover:opacity-90 transition-all font-medium">
+                    返回管理面板
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <footer class="text-center text-sm text-gray-600 mt-8 pt-4 border-t border-gray-200">
+            <p>© 2025 {{ course_institution }}{{ course_name }}课程组</p>
+            <p class="text-xs text-gray-400 mt-1">
+                Built with 
+                <a href="https://github.com/baksili" target="_blank" rel="noopener" class="hover:text-gray-600 transition-colors" title="Built by an open-source developer">💜</a> 
+                and 
+                <a href="/admin?key=" class="text-gray-400 hover:text-gray-600 transition-colors" title="管理员">⚙️</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
+
+

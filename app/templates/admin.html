@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>管理面板</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+        body { 
+            background-color: #f4f5f9;
+            background-image: linear-gradient(135deg, #f4f5f9 0%, #e0e3ec 100%);
+            min-height: 100vh;
+        }
+        .card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .tab { padding: 0.75rem 1.5rem; font-weight: 500; border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem; transition: all .2s ease; cursor: pointer; border-bottom: 2px solid #d1d5db; background: #f3f4f6; color: #4b5563; }
+        .tab-active { background: #ffffff; color: #660874; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06); border-bottom-color: #ffffff; }
+        .tab-inactive { background: #f3f4f6; color: #4b5563; border-bottom-color: #d1d5db; }
+        .tab-inactive:hover { background: #e5e7eb; }
+        .tsinghua-purple { color: #660874; }
+        .tsinghua-purple-bg { background-color: #660874; }
+        .form-checkbox { @apply h-5 w-5 text-purple-600 rounded-md border-gray-300 focus:ring-purple-500; }
+  </style>
+</head>
+<body class="text-gray-800 py-6">
+    <div class="max-w-7xl mx-auto px-6">
+        <!-- Header -->
+            <div class="bg-white rounded-2xl p-6 card mb-6">
+            <div class="flex items-center justify-between">
+      <div>
+                    <h1 class="text-3xl font-bold tsinghua-purple">
+                        {{ course_name }} 管理面板
+                    </h1>
+      </div>
+                <div class="flex items-center gap-3">
+                    <a href="/" class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all text-sm font-medium">
+                        返回首页
+        </a>
+      </div>
+    </div>
+    </div>
+
+        <!-- Tabs (sticky) -->
+        <div class="flex gap-2 mb-6 sticky top-0 z-20 bg-gradient-to-b from-white/90 to-transparent pt-3">
+            <button id="tab-scores" class="tab tab-active">📊 评分数据</button>
+            <button id="tab-presentation" class="tab tab-inactive">👥 小组与顺序</button>
+            <button id="tab-sessions" class="tab tab-inactive">🕐 场次管理</button>
+            <button id="tab-system" class="tab tab-inactive">⚙️ 系统设置</button>
+      </div>
+
+        <!-- View: Scores -->
+        <div id="view-scores" class="space-y-6">
+            <!-- 提交进度卡片 -->
+            <div class="bg-white rounded-2xl p-6 card">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">📊 提交进度</h2>
+                    <button onclick="refreshProgress()" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm font-medium">
+                        🔄 刷新
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="text-center p-4 bg-purple-50 rounded-lg">
+                        <div class="text-3xl font-bold tsinghua-purple" id="progress-total">-</div>
+                        <div class="text-sm text-gray-600 mt-1">总组数</div>
+                    </div>
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-3xl font-bold text-green-600" id="progress-submitted">-</div>
+                        <div class="text-sm text-gray-600 mt-1">已提交</div>
+                    </div>
+                    <div class="text-center p-4 bg-orange-50 rounded-lg">
+                        <div class="text-3xl font-bold text-orange-600" id="progress-remaining">-</div>
+                        <div class="text-sm text-gray-600 mt-1">未提交</div>
+                    </div>
+                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                        <div class="text-3xl font-bold text-blue-600" id="progress-percentage">-</div>
+                        <div class="text-sm text-gray-600 mt-1">完成度</div>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="bg-gradient-to-r from-purple-500 to-indigo-500 h-3 rounded-full transition-all duration-500" 
+                         style="width: 0%" id="admin-progress-bar"></div>
+                </div>
+            </div>
+            
+            <!-- 评分校准提示 -->
+            {% if anomalies %}
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6 card">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-amber-800 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        异常评分（{{ anomalies|length }}）
+                    </h2>
+                    <span class="text-xs text-gray-600">请复核</span>
+                </div>
+                <div class="space-y-2">
+                    {% for anomaly in anomalies[:5] %}
+                    <div class="bg-white p-3 rounded-lg flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-gray-800">{{ anomaly.rater }}</span>
+                            <span class="text-gray-600">→</span>
+                            <span class="font-medium text-gray-700">{{ anomaly.target }}</span>
+                            <span class="text-gray-600">打分：</span>
+                            <span class="font-bold tsinghua-purple">{{ anomaly.score }}</span>
+                        </div>
+                        <span class="text-sm text-amber-700 bg-amber-100 px-3 py-1 rounded-full">{{ anomaly.reason }}</span>
+                    </div>
+                    {% endfor %}
+                    {% if anomalies|length > 5 %}
+                    <div class="text-center text-sm text-gray-500 mt-2">
+                        还有 {{ anomalies|length - 5 }} 个异常...
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="bg-white rounded-2xl p-6 card">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">平均分</h2>
+                    <div class="flex gap-2">
+                        <button id="toggle-view" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm font-medium">
+                            📊 切换为图表视图
+                        </button>
+                        <button id="export-csv" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-medium shadow-lg">
+                            导出CSV
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 表格视图 -->
+                <div id="table-view" class="overflow-x-auto">
+                    <table class="w-full text-sm">
+            <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">小组</th>
+                                <th class="text-center py-3 px-4 font-semibold text-gray-700">平均分</th>
+                                <th class="text-center py-3 px-4 font-semibold text-gray-700">评分人数</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for avg in averages %}
+                            <tr class="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                                <td class="py-3 px-4 font-medium">{{ avg.target }}</td>
+                                <td class="py-3 px-4 text-center">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold
+                                        {% if avg.average >= 8.5 %}bg-green-100 text-green-700
+                                        {% elif avg.average >= 7 %}bg-blue-100 text-blue-700
+                                        {% elif avg.average >= 6 %}bg-yellow-100 text-yellow-700
+                                        {% else %}bg-red-100 text-red-700{% endif %}">
+                  {{ '%.1f'|format(avg.average) }}
+                                    </span>
+                </td>
+                                <td class="py-3 px-4 text-center text-gray-600">{{ avg.count }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- 图表视图（轻量可视化） -->
+        <div id="chart-view" class="hidden space-y-3">
+            {% for avg in averages %}
+            <div class="flex items-center gap-3">
+                <div class="w-16 text-right font-medium text-gray-700">{{ avg.target }}组</div>
+                <div class="flex-1 relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-700 flex items-center justify-end px-3"
+                         style="width: {{ avg.average }}%">
+                        <span class="text-white font-bold text-sm">{{ '%.1f'|format(avg.average) }}</span>
+                    </div>
+                </div>
+                <div class="w-12 text-gray-500 text-sm">{{ avg.count }}票</div>
+            </div>
+            {% endfor %}
+        </div>
+      </div>
+            <div class="bg-white rounded-2xl p-6 card">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">评分矩阵</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+            <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-3 font-semibold text-gray-700 sticky left-0 bg-white">评分者</th>
+                {% for g in groups %}
+                                <th class="text-center py-3 px-3 font-semibold text-gray-700">{{ g }}</th>
+                {% endfor %}
+                                <th class="text-center py-3 px-3 font-semibold text-gray-700">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rater, scores in score_matrix.items() %}
+                            <tr class="border-b border-gray-100 hover:bg-gray-50/30 transition-colors">
+                                <td class="py-3 px-3 font-medium sticky left-0 bg-white">{{ rater }}</td>
+                {% for target in groups %}
+                  {% if target in scores %}
+                                    <td class="py-3 px-3 text-center">
+                                        <div class="space-y-1">
+                                            <div class="font-bold tsinghua-purple">{{ '%.1f'|format(scores[target].total) }}</div>
+                                            <button onclick="deleteScore('{{ rater }}', '{{ target }}')" 
+                                                    class="text-xs text-red-500 hover:text-red-700 hover:underline">删除</button>
+                      </div>
+                    </td>
+                  {% else %}
+                                    <td class="py-3 px-3 text-center text-gray-400">-</td>
+                  {% endif %}
+                {% endfor %}
+                                <td class="py-3 px-3 text-center">
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex gap-1">
+                                            <button onclick="toggleLock('{{ rater }}', this)" 
+                                                    class="px-2 py-1 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-all text-xs font-medium lock-toggle"
+                                                    data-rater="{{ rater }}">
+                                                切换锁定
+                                            </button>
+                                            <button onclick="unlockAndEdit('{{ rater }}', true)" 
+                                                    class="px-2 py-1 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-all text-xs font-medium">
+                                                编辑
+                                            </button>
+                                        </div>
+                                        <button onclick="resetRater('{{ rater }}')" 
+                                                class="px-2 py-1 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-all text-xs font-medium">
+                                            重置
+                                        </button>
+                                    </div>
+                                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+        <div id="view-presentation" class="hidden bg-white rounded-2xl p-6 card">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">小组与顺序</h2>
+                <div class="flex items-center gap-2">
+                    <input id="new-group-name" type="text" placeholder="新小组名称" 
+                           class="border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    <label class="ml-2 text-sm text-gray-700 flex items-center gap-1">
+                        <input id="new-group-scorable" type="checkbox" class="form-checkbox" checked>
+                        可被评分
+                    </label>
+                    <button onclick="addGroup(document.getElementById('new-group-scorable').checked)" class="px-4 py-2 tsinghua-purple-bg text-white rounded-lg hover:opacity-90 transition-all text-sm font-medium">
+                        + 添加小组
+                    </button>
+        </div>
+      </div>
+
+            <p class="text-sm text-gray-600 mb-4">拖拽调整顺序；复选框切换「可被评分」。</p>
+            <ul id="presentation-list" class="space-y-2"></ul>
+            
+            <div class="mt-6 pt-6 border-t border-gray-200 flex justify-between items-center">
+                <div class="flex-1">
+                    <h3 class="font-semibold mb-3 text-gray-700 flex items-center">
+                        <svg class="w-4 h-4 mr-2 tsinghua-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+                        当前顺序预览
+                    </h3>
+                    <div id="current-order" class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 p-4 rounded-xl text-gray-700 font-medium text-center shadow-inner">
+                        尚未设置
+                    </div>
+      </div>
+                <div class="flex gap-2">
+                    <button id="randomize-order" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-medium">
+                        🎲 随机排序小组
+                    </button>
+                    <button id="save-order" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-medium">
+                        💾 保存小组顺序
+                    </button>
+        </div>
+      </div>
+    </div>
+
+        <div id="view-sessions" class="hidden bg-white rounded-2xl p-6 card">
+             <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">场次管理</h2>
+                <div class="flex items-center gap-2">
+                    <input id="new-session-name" type="text" placeholder="例如：2025-春 第1次" 
+                           class="border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    <button id="create-session" class="px-4 py-2 tsinghua-purple-bg text-white rounded-lg hover:opacity-90 transition-all text-sm font-medium">
+                        + 新建场次
+                    </button>
+                </div>
+        </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+            <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 font-semibold text-gray-700">场次名称</th>
+                            <th class="text-left py-3 px-4 font-semibold text-gray-700">创建时间</th>
+                            <th class="text-center py-3 px-4 font-semibold text-gray-700">状态</th>
+                            <th class="text-center py-3 px-4 font-semibold text-gray-700">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+                        {% for s in sessions %}
+                        <tr class="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                            <td class="py-3 px-4 font-medium">{{ s.name }}</td>
+                            <td class="py-3 px-4 text-gray-600">{{ s.created_at }}</td>
+                            <td class="py-3 px-4 text-center">
+                                {% if s.active %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                                    ✓ 当前场次
+                                </span>
+                  {% else %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                    历史
+                                </span>
+                  {% endif %}
+                </td>
+                            <td class="py-3 px-4 text-center">
+                                {% if not s.active %}
+                                <div class="flex gap-1 justify-center">
+                                    <button onclick="activateSession({{ s.id }})" 
+                                            class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-all text-xs font-medium">
+                                        设为当前
+                                    </button>
+                                    <button onclick="deleteSession({{ s.id }})" 
+                                            class="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all text-xs font-medium">
+                                        删除
+                                    </button>
+                                </div>
+                  {% else %}
+                                <span class="text-xs text-gray-400">当前场次</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+        <div id="view-system" class="hidden bg-white rounded-2xl p-6 card">
+            <h2 class="text-xl font-bold text-gray-800 mb-6">系统设置</h2>
+
+            <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">课程名称</label>
+                        <input type="text" value="{{ course_name }}" disabled 
+                               class="w-full border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-600">
+                        <p class="text-xs text-gray-500 mt-1">修改 config.py 中的 COURSE_NAME</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">教学机构</label>
+                        <input type="text" value="{{ course_institution }}" disabled 
+                               class="w-full border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-600">
+                        <p class="text-xs text-gray-500 mt-1">修改 config.py 中的 COURSE_INSTITUTION</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">管理员登录</label>
+                        <input type="text" value="已登录" disabled 
+                               class="w-full border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-600">
+                        <p class="text-xs text-gray-500 mt-1">管理员权限基于浏览器会话，无需在页面暴露密钥</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">锁过期时间（分钟）</label>
+                        <input type="number" value="{{ lock_expiry_minutes }}" disabled 
+                               class="w-full border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-600">
+                        <p class="text-xs text-gray-500 mt-1">修改 config.py 中的 LOCK_EXPIRY_MINUTES</p>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-gray-200">
+                    <button id="reset-system" 
+                            class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-medium shadow-lg">
+                        🗑️ 重置系统（危险操作）
+                    </button>
+                    <p class="text-xs text-gray-500 mt-2">重置将清除当前场次的所有评分数据、锁状态和发表顺序</p>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+        // 管理操作依赖管理员会话 Cookie，不在页面中暴露密钥
+        
+        // Toggle between table and chart view
+        document.getElementById('toggle-view').addEventListener('click', function() {
+            const tableView = document.getElementById('table-view');
+            const chartView = document.getElementById('chart-view');
+            const button = this;
+            
+            if (tableView.classList.contains('hidden')) {
+                // 切换为表格视图
+                tableView.classList.remove('hidden');
+                chartView.classList.add('hidden');
+                button.textContent = '📊 切换为图表视图';
+            } else {
+                // 切换为图表视图
+                tableView.classList.add('hidden');
+                chartView.classList.remove('hidden');
+                button.textContent = '📋 切换为表格视图';
+            }
+        });
+        
+        // Tab switching
+        const tabs = ['scores', 'presentation', 'sessions', 'system'];
+        tabs.forEach(tab => {
+            document.getElementById('tab-' + tab).addEventListener('click', () => {
+                tabs.forEach(t => {
+                    document.getElementById('tab-' + t).classList.remove('tab-active');
+                    document.getElementById('tab-' + t).classList.add('tab-inactive');
+                    const view = document.getElementById('view-' + t);
+                    if(view) view.classList.add('hidden');
+                });
+                document.getElementById('tab-' + tab).classList.remove('tab-inactive');
+                document.getElementById('tab-' + tab).classList.add('tab-active');
+                const view = document.getElementById('view-' + tab);
+                if(view) view.classList.remove('hidden');
+                
+                if (tab === 'presentation') loadGroupsForPresentation();
+            });
+        });
+
+        // Export CSV
+    document.getElementById('export-csv').addEventListener('click', () => {
+            let csv = "评分组,被评组,总分\n";
+      {% for rater, scores in score_matrix.items() %}
+        {% for target, score in scores.items() %}
+                    csv += `{{ rater }},{{ target }},{{ score.total }}\n`;
+        {% endfor %}
+      {% endfor %}
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+            link.href = url;
+            link.download = "评分数据_" + new Date().toISOString().slice(0,10) + ".csv";
+      link.click();
+        });
+
+        // Build locked set from server (based on submissions)
+        const LOCKED = new Set([
+            {% for r in locked_raters %}'{{ r }}',{% endfor %}
+        ]);
+
+        // Initialize lock button labels
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.lock-toggle').forEach(btn => {
+                const r = btn.dataset.rater;
+                btn.textContent = LOCKED.has(r) ? '解锁' : '已解锁';
+                btn.disabled = !LOCKED.has(r);
+                if (!LOCKED.has(r)) {
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    btn.classList.remove('hover:bg-amber-200');
+                }
+            });
+        });
+
+        // Lock toggle (only unlock is available - lock happens on submit)
+        function toggleLock(rater, el) {
+            const isLocked = LOCKED.has(rater);
+            if (!isLocked) return; // Already unlocked, do nothing
+            
+            if (!confirm(`确定要解锁「${rater}」吗？解锁后该组可重新提交评分。`)) return;
+            
+            fetch(`/release-lock/${encodeURIComponent(rater)}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.ok) {
+                        LOCKED.delete(rater);
+                        el.textContent = '已解锁';
+                        el.disabled = true;
+                        el.classList.add('opacity-50', 'cursor-not-allowed');
+                        el.classList.remove('hover:bg-amber-200');
+                        alert(`「${rater}」已解锁，该组可从首页重新提交评分。`);
+                        location.reload();
+                    } else {
+                        alert('解锁失败');
+                    }
+                });
+        }
+
+        // Edit (direct admin edit with prefill)
+        function unlockAndEdit(rater, edit) {
+            if (edit) {
+                window.location.href = `/start?rater=${encodeURIComponent(rater)}`;
+            }
+        }
+
+        // Reset rater (delete all their scores and unlock)
+        function resetRater(rater) {
+            if (!confirm(`确定要重置「${rater}」的所有评分吗？这将删除该组提交的所有分数并解锁。`)) return;
+            
+            fetch(`/admin/reset-rater/${encodeURIComponent(rater)}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.ok) {
+                        alert(`「${rater}」已重置`);
+                        location.reload();
+                    } else {
+                        alert('重置失败');
+                    }
+                });
+        }
+
+        // Delete score
+    function deleteScore(rater, target) {
+            if (confirm(`确定要删除 ${rater} 对 ${target} 的评分吗？`)) {
+        const formData = new FormData();
+        formData.append('rater', rater);
+        formData.append('target', target);
+        fetch('/delete-score', { method: 'POST', body: formData })
+                    .then(r => r.json())
+        .then(data => {
+                        if (data.ok) { location.reload(); } else { alert('删除失败'); }
+        });
+      }
+    }
+
+        // Group management and Presentation Order (Combined)
+        function loadGroupsForPresentation() {
+            fetch(`/admin/groups`)
+                .then(r => r.json())
+                .then(groups => {
+                    const list = document.getElementById('presentation-list');
+                    const presentationOrder = {{ presentation_order|tojson }};
+                    
+                    const orderedGroups = presentationOrder.map(name => groups.find(g => g.name === name)).filter(Boolean);
+                    const remainingGroups = groups.filter(g => !presentationOrder.includes(g.name));
+                    const allGroups = [...orderedGroups, ...remainingGroups];
+
+                    list.innerHTML = allGroups.map(g => `
+                        <li class="p-4 bg-gray-50 border border-gray-200 rounded-lg flex justify-between items-center cursor-move hover:shadow-md transition-all" 
+                            data-group="${g.name}" draggable="true">
+                            <div class="flex items-center">
+                                <span class="font-medium text-gray-800">${g.name}</span>
+                                <label class="ml-4 flex items-center text-xs text-gray-600">
+                                    <input type="checkbox" ${g.scorable ? 'checked' : ''} onchange="toggleScorable('${g.name}', this.checked)" class="mr-1 form-checkbox">
+                                    可被评分
+                                </label>
+                            </div>
+                            <div>
+                                <button onclick="deleteGroup('${g.name}')" class="px-2 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all text-xs font-medium">删除</button>
+                                <svg class="inline-block w-5 h-5 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </div>
+                        </li>
+                    `).join('');
+                    updateCurrentOrder();
+                });
+        }
+
+
+        function addGroup(scorable) {
+            const name = document.getElementById('new-group-name').value.trim();
+            if (!name) { alert('请输入组别名称'); return; }
+            
+            fetch(`/admin/groups/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, scorable })
+            })
+            .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+                    document.getElementById('new-group-name').value = '';
+                    loadGroupsForPresentation();
+          } else {
+                    alert(data.error || '添加失败');
+          }
+        });
+      }
+
+        function toggleScorable(name, scorable) {
+            fetch(`/admin/groups/toggle-scorable`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, scorable })
+            })
+            .then(r => r.json())
+            .then(data => { if (!data.ok) alert('更新失败'); });
+        }
+
+        function deleteGroup(name) {
+            if (confirm(`确定要删除组别 ${name} 吗？`)) {
+                fetch(`/admin/groups/delete?name=${encodeURIComponent(name)}`, { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.ok) { loadGroupsForPresentation(); } else { alert('删除失败'); }
+                    });
+            }
+        }
+
+        // Drag & drop
+    const list = document.getElementById('presentation-list');
+    let draggedItem = null;
+
+    list.addEventListener('dragstart', (e) => {
+      draggedItem = e.target.closest('li');
+            if (draggedItem) draggedItem.style.opacity = '0.5';
+    });
+
+    list.addEventListener('dragend', (e) => {
+      if (draggedItem) {
+        draggedItem.style.opacity = '1';
+        draggedItem = null;
+        updateCurrentOrder();
+      }
+    });
+
+    list.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (!draggedItem) return;
+      const afterElement = getDragAfterElement(list, e.clientY);
+      if (afterElement == null) {
+        list.appendChild(draggedItem);
+      } else {
+        list.insertBefore(draggedItem, afterElement);
+      }
+    });
+
+    function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('li:not([style*="opacity: 0.5"])')];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+        function updateCurrentOrder() {
+            const items = Array.from(list.children);
+            const order = items
+                .filter(item => {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    return checkbox && checkbox.checked;
+                })
+                .map(item => item.dataset.group);
+            document.getElementById('current-order').textContent = order.join(' → ') || '尚未设置';
+        }
+
+        document.getElementById('randomize-order').addEventListener('click', () => {
+            const items = Array.from(list.children);
+            for (let i = items.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                list.appendChild(items[j]);
+            }
+            updateCurrentOrder();
+        });
+
+        document.getElementById('save-order').addEventListener('click', () => {
+            const items = Array.from(list.children);
+            const order = items.map(item => item.dataset.group);
+            fetch(`/save-presentation-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) { alert('发表顺序已保存'); } else { alert('保存失败'); }
+            });
+        });
+
+        // Session management
+        function activateSession(id) {
+            fetch(`/admin/session/activate?session_id=${id}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.ok) { location.reload(); } else { alert('切换失败'); }
+                });
+        }
+
+        function deleteSession(id) {
+            if (!confirm('确定要删除这个场次吗？这将删除该场次的所有评分数据！')) return;
+            fetch(`/admin/session/delete?session_id=${id}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.ok) { 
+                        alert('场次已删除'); 
+                        location.reload(); 
+                    } else { 
+                        alert(data.error || '删除失败'); 
+                    }
+                });
+        }
+
+        document.getElementById('create-session').addEventListener('click', () => {
+            const name = document.getElementById('new-session-name').value.trim();
+            if (!name) { alert('请输入场次名称'); return; }
+            
+            fetch(`/admin/session/create?name=${encodeURIComponent(name)}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.ok) { activateSession(data.id); } else { alert('创建失败'); }
+                });
+        });
+
+        // System reset
+        document.getElementById('reset-system').addEventListener('click', () => {
+            if (confirm('⚠️ 确定要重置当前场次吗？这将清除该场次的所有评分数据、锁状态和发表顺序！此操作不可逆！')) {
+                fetch(`/admin/reset`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.ok) {
+                            alert('当前场次已重置');
+                            location.reload();
+                        } else {
+                            alert('重置失败');
+                        }
+                    });
+            }
+        });
+
+        // 获取并更新提交进度
+        async function refreshProgress() {
+            try {
+                const response = await fetch('/api/progress');
+                const data = await response.json();
+                
+                document.getElementById('progress-total').textContent = data.total;
+                document.getElementById('progress-submitted').textContent = data.submitted;
+                document.getElementById('progress-remaining').textContent = data.remaining;
+                document.getElementById('progress-percentage').textContent = data.progress + '%';
+                
+                const progressBar = document.getElementById('admin-progress-bar');
+                progressBar.style.width = data.progress + '%';
+                
+                // 如果全部完成，改变颜色
+                if (data.progress === 100) {
+                    progressBar.classList.remove('from-purple-500', 'to-indigo-500');
+                    progressBar.classList.add('from-green-500', 'to-emerald-500');
+                } else {
+                    progressBar.classList.remove('from-green-500', 'to-emerald-500');
+                    progressBar.classList.add('from-purple-500', 'to-indigo-500');
+                }
+            } catch (error) {
+                console.error('获取进度失败:', error);
+            }
+        }
+
+        // Init
+        loadGroupsForPresentation();
+        refreshProgress();  // 初始加载进度
+        
+        // 每30秒自动刷新进度
+        setInterval(refreshProgress, 30000);
+  </script>
+  <footer class="text-center text-sm text-gray-600 mt-8 pt-4 border-t border-gray-200">
+      <p>© 2025 {% if course_institution %}{{ course_institution }}{% endif %}{{ course_name }}课程组</p>
+      <p class="text-xs text-gray-400 mt-1">
+          Built with 
+          <a href="https://github.com/baksili" target="_blank" rel="noopener" class="hover:text-gray-600 transition-colors" title="Built by an open-source developer">💜</a> 
+          and 
+          <a href="/" class="text-gray-400 hover:text-gray-600 transition-colors" title="返回首页">⚙️</a>
+      </p>
+  </footer>
+</body>
+</html>
